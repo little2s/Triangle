@@ -72,12 +72,18 @@ class Renderer {
         
         let commandBuffer = self.commandQueue.makeCommandBuffer()!
         
+        print(texture.width)
+        
         let commandEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPass)!
         commandEncoder.setRenderPipelineState(self.pipelineState)
         commandEncoder.setVertexBuffer(self.vertexBuffer, offset: 0, index: 0)
-        var viewportSize = SIMD2<Float>(Float(layer.frame.width), Float(layer.frame.height))
+        var viewportSize = SIMD2<Float>(Float(layer.frame.width * layer.contentsScale), Float(layer.frame.height * layer.contentsScale))
         commandEncoder.setVertexBytes(&viewportSize, length: MemoryLayout.size(ofValue: viewportSize), index: 1)
-        let transform = CATransform3DMakeRotation(self.rotation(), 0, 0, 1)
+        var t = CGAffineTransform.identity
+        t = t.concatenating(CGAffineTransform(translationX: 0, y: 250/3.0))
+        t = t.concatenating(CGAffineTransform(rotationAngle: self.rotation()))
+        t = t.concatenating(CGAffineTransform(translationX: 0, y: -250/3.0))
+        let transform = CATransform3DMakeAffineTransform(t)
         var uniforms = Uniforms(m: transform.simdMatrix)
         commandEncoder.setVertexBytes(&uniforms, length: MemoryLayout.size(ofValue: uniforms), index: 2)
         commandEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 3)
@@ -108,7 +114,7 @@ class Renderer {
     
     private func rotation() -> CGFloat {
         if let startTime = self.startTime {
-            return CGFloat(CFAbsoluteTimeGetCurrent() - startTime) / 2 * (-.pi) * 2
+            return CGFloat(CFAbsoluteTimeGetCurrent() - startTime) / 4 * (-.pi) * 2
         }
         self.startTime = CFAbsoluteTimeGetCurrent()
         return 0
